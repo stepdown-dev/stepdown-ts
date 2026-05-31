@@ -1,0 +1,46 @@
+{
+  "name": "@stepdown-dev/ts",
+  "version": "0.0.0",
+  "description": "TypeScript implementation of stepdown — a family of structural source analyzers enforcing top-down readability.",
+  "license": "Apache-2.0",
+  "author": "Stinnett Holdings LLC",
+  "homepage": "https://stepdown.dev/ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stepdown-dev/stepdown-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/stepdown-dev/stepdown-ts/issues"
+  },
+  "keywords": [
+    "stepdown",
+    "linter",
+    "static-analysis",
+    "code-organization",
+    "typescript"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "stepdown-ts": "./bin/cli.mjs"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "bin/",
+    "dist/",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "self-check": "node bin/cli.mjs src",
+    "fixture-check": "node bin/cli.mjs fixtures/positive",
+    "ci": "npm run build && npm run self-check && npm run fixture-check"
+  },
+  "dependencies": {
+    "typescript": "^5.4.0"
+  }
+}

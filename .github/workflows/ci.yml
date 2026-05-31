@@ -1,0 +1,24 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  self-policing:
+    name: stepdown-ts self-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm ci || npm install
+      - name: Build
+        run: npm run build
+      - name: Self-check — stepdown-ts on its own src
+        run: npm run self-check
+      - name: Fixture check — positive-witness fixtures (zero diagnostics expected)
+        run: npm run fixture-check
