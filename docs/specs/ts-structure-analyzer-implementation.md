@@ -7,7 +7,7 @@ Target release: v0.1.0
 
 ## Problem And Success
 
-ADR-0001 ratifies the TypeScript structure analyzer grammar, but the current repository is still a scaffold. The v0.1.0 implementation must turn the ADR grammar into an executable TypeScript analyzer without weakening the stepdown-dev Principles contract.
+ADR-0001 ratifies the TypeScript structure analyzer grammar. The current repository contains the v0.1.0 analyzer implementation, and this spec remains the implementation contract for preserving the executable TypeScript analyzer without weakening the stepdown-dev Principles contract.
 
 Success means:
 
@@ -40,17 +40,17 @@ Authoritative sources:
 
 - stepdown-dev Principles document at `https://github.com/stepdown-dev/.github/blob/main/PRINCIPLES.md`.
 - ADR-0001 in this repository.
-- Current repository scaffold in `src/`, `.github/workflows/ci.yml`, `package.json`, and `README.md`.
+- Current repository implementation in `src/`, `.github/workflows/verify.yml`, `package.json`, and `README.md`.
 - Reference structure from the sibling repository specs, adapted only where TypeScript and ADR-0001 require it.
 
 Current-code facts:
 
 - `package.json` declares package `@stepdown-dev/ts`, binary `stepdown-ts`, `type: "module"`, Node `>=20`, dependency `typescript`, and scripts `build`, `self-check`, `fixture-check`, and `ci`.
-- `src/walker.ts` currently returns no diagnostics and must become the analyzer entry.
+- `src/walker.ts` is the analyzer entry: it loads source files, routes module/class records through ADR-0001 rule diagnostics, combines module and class function-order diagnostics, sorts diagnostics, and returns tool errors from source loading.
 - `src/file-selection.ts` already encodes the ADR file-extension, test/spec, declaration-file, and generated-marker selection rules.
 - `src/diagnostic.ts` already defines the public diagnostic shape, formatter, and deterministic sorter.
-- Rule name modules already exist under `src/rules/`, but rule behavior is not implemented.
-- `.github/workflows/ci.yml` already builds, runs self-check, and runs fixture-check.
+- Rule modules under `src/rules/` implement the ADR-0001 diagnostic families and are orchestrated by `src/walker.ts`.
+- `.github/workflows/verify.yml` already builds, runs self-check, and runs fixture-check.
 
 ## Scope And Exclusions
 
@@ -123,7 +123,7 @@ Requirements:
 - Findings print to stdout and exit `1`.
 - A clean run prints no diagnostics and exits `0`.
 
-The current scaffold exits `0` on zero args; v0.1.0 must correct that.
+The current CLI implements this contract: zero input paths are parsed as a tool error and exit `2`.
 
 ### Programmatic Contract
 

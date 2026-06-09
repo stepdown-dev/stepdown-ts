@@ -7,7 +7,7 @@ Target release: v0.1.0
 
 ## Problem And Success
 
-The repository has an accepted TypeScript analyzer ADR and a minimal package scaffold. Before v0.1.0, repository hardening must make local verification, CI verification, public project surfaces, dependency discipline, and release checks explicit enough that analyzer changes cannot bypass the stepdown-dev Principles contract.
+The repository has an accepted TypeScript analyzer ADR, an implemented v0.1.0 analyzer, deterministic npm install state, and a verification workflow. Repository hardening must keep local verification, CI verification, public project surfaces, dependency discipline, and release checks explicit enough that analyzer changes cannot bypass the stepdown-dev Principles contract.
 
 Success means:
 
@@ -40,14 +40,14 @@ Authoritative sources:
 
 - stepdown-dev Principles document at `https://github.com/stepdown-dev/.github/blob/main/PRINCIPLES.md`.
 - ADR-0001 in this repository.
-- Current repository files: `package.json`, `.github/workflows/ci.yml`, `README.md`, and `src/`.
+- Current repository files: `package.json`, `.github/workflows/verify.yml`, `README.md`, and `src/`.
 - The sibling repository hardening structure, adapted to npm, TypeScript, and ADR-0001.
 
 Current-code facts:
 
 - `package.json` has `npm run build`, `npm run self-check`, `npm run fixture-check`, and `npm run ci`.
-- `.github/workflows/ci.yml` runs on pull requests and pushes to `main`, uses Node 20, and currently installs with `npm ci || npm install`.
-- No lockfile is currently visible in the target repository.
+- `.github/workflows/verify.yml` runs on pull requests and pushes to `main`, uses Node 20 with npm cache, installs with `npm ci`, and runs `npm run ci` as the canonical repository gate.
+- `package-lock.json` exists and pins the npm dependency graph for the v0.1.0 package.
 - Root public-policy files are intentionally assigned to a separate repository hygiene pass and are not edited by this spec.
 
 ## Scope And Exclusions
@@ -141,7 +141,7 @@ Expected repository files:
 
 - `package.json`: package scripts, package metadata, binary, files whitelist, Node engine.
 - `package-lock.json`: deterministic npm install input.
-- `.github/workflows/ci.yml`: pull request and main-branch verification.
+- `.github/workflows/verify.yml`: pull request and main-branch verification.
 - `.github/dependabot.yml`: npm dependency update checks.
 - `.github/ISSUE_TEMPLATE/legitimate-idiom-rejected.yml`: reports valid TypeScript structure rejected by the analyzer.
 - `.github/ISSUE_TEMPLATE/invalid-structure-accepted.yml`: reports source shape accepted when ADR-0001 says it should not be.
@@ -291,8 +291,8 @@ Dependency update configuration:
 Lockfile and CI:
 
 - `package-lock.json` exists.
-- `.github/workflows/ci.yml` uses `npm ci`.
-- `.github/workflows/ci.yml` runs `npm run ci`.
+- `.github/workflows/verify.yml` uses `npm ci`.
+- `.github/workflows/verify.yml` runs `npm run ci`.
 - Workflow no longer contains `npm ci || npm install`.
 
 Package scripts:
