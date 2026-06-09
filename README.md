@@ -1,115 +1,120 @@
 # stepdown-ts
 
-TypeScript implementation of **stepdown**, a structural source analyzer for top-down readability.
+[![Verify](https://github.com/stepdown-dev/stepdown-ts/actions/workflows/verify.yml/badge.svg)](https://github.com/stepdown-dev/stepdown-ts/actions/workflows/verify.yml)
+[![License](https://img.shields.io/github/license/stepdown-dev/stepdown-ts)](LICENSE)
+[![Node Version](https://img.shields.io/node/v/@stepdown-dev/ts)](package.json)
+[![npm](https://img.shields.io/npm/v/@stepdown-dev/ts.svg)](https://www.npmjs.com/package/@stepdown-dev/ts)
+[![npm downloads](https://img.shields.io/npm/dm/@stepdown-dev/ts.svg)](https://www.npmjs.com/package/@stepdown-dev/ts)
 
-`stepdown-ts` v0.1.0 implements the grammar accepted in
-[ADR-0001](docs/adr/0001-stepdown-ts-structure-analyzer.md).
+**A TypeScript linter that keeps source files readable top to bottom.**
 
-## Family
+Good TypeScript files read like a newspaper: the headline first, the details below. Types and interfaces come before the consts and behavior that use them, exported functions come before the private helpers they call, and you never have to scroll up to understand what you're looking at. `stepdown-ts` enforces that order mechanically, so it stays true no matter how many edits — human or machine — a file goes through.
 
-- Brand: [stepdown.dev](https://stepdown.dev) -> [stepdown.dev/ts](https://stepdown.dev/ts)
-- Principles: [stepdown-dev Principles](https://github.com/stepdown-dev/.github/blob/main/PRINCIPLES.md)
-- Go sibling: [stepdown-dev/stepdown-go](https://github.com/stepdown-dev/stepdown-go)
-- Specification: [ADR-0001](docs/adr/0001-stepdown-ts-structure-analyzer.md)
-- Owner: Stinnett Holdings LLC
+That last part is the point. Code generators are good at writing correct functions and bad at placing them: a helper lands above the function that calls it, a class drifts below the methods that use it, declarations pile up wherever the cursor happened to be. Each edit is locally fine and the file slowly stops reading top-down. `stepdown-ts` makes the ordering a check instead of a habit.
 
-## What It Checks
+## Example
 
-Source should read top-down: high-level declarations appear before the supporting declarations
-they depend on, and public roots are followed by their private callees in depth-first order.
+This file passes:
 
-`stepdown-ts` checks TypeScript and TSX source structure only. It does not check formatting,
-style, runtime behavior, security, performance, semantic correctness, or API design.
+```ts
+import { strictEqual } from "node:assert";
 
-The analyzer is a positive-grammar walker over the TypeScript compiler API. It has no project
-configuration, no local suppressions, and no rule toggles. Accepted TypeScript shapes change
-through ADR review when the grammar needs to expand.
+interface Config {
+  readonly value: number;
+}
 
-## Install
+type Result = {
+  readonly label: string;
+};
+
+const DEFAULT_CONFIG: Config = {
+  value: 1,
+};
+
+export function buildResult(config: Config = DEFAULT_CONFIG): Result {
+  const label = formatLabel(config.value);
+  strictEqual(label.length > 0, true);
+  return { label };
+}
+
+function formatLabel(value: number): string {
+  return `value-${value}`;
+}
+```
+
+Read it straight down: the import, then the types, then the const, then the exported function, with `formatLabel` sitting right below the function that calls it. Move `formatLabel` above `buildResult`, drop the `DEFAULT_CONFIG` constant beneath the function definitions, or wedge a private helper between two exported functions, and `stepdown-ts` reports the file with a `file:line:column` diagnostic and a non-zero exit code.
+
+## Usage
 
 ```sh
-npm install --save-dev @stepdown-dev/ts@<version>
+npx @stepdown-dev/ts@0.1.0 src
 ```
 
-## Invoke
-
-```sh
-npx @stepdown-dev/ts@<version> <path> [<path>...]
-```
-
-Or, after pinned local install:
-
-```sh
-npm exec stepdown-ts <path> [<path>...]
-```
-
-Help:
-
-```sh
-stepdown-ts -h
-stepdown-ts --help
-stepdown-ts -help
-```
-
-## Output
-
-Diagnostics are sorted text lines:
-
-```text
-path:line:column: rule-name: description
-```
+Drop that into a CI step, or run it after `npm install --save-dev @stepdown-dev/ts@0.1.0` with `npm exec stepdown-ts -- src`. It takes file and directory paths and analyzes the non-test, non-generated TypeScript and TSX files.
 
 Exit codes:
 
-- `0` - clean input or help
-- `1` - structural findings
-- `2` - tool, load, parse, or type-check error
+- `0` — clean
+- `1` — one or more files do not conform
+- `2` — could not analyze (usage, load, parse, type-check, or tool error)
 
-Verification gates fail closed on any non-zero exit code.
+Diagnostics use the standard format, so editors and CI pick them up without configuration:
 
-## Rule Set
-
-- `section-order` - module-level section out of order
-- `declaration-zone-order` - declaration-zone types, interfaces, and enums appear after values
-- `dfs-public-root` - helper appears before the public root that first reaches it
-- `helper-placement` - helper appears outside the public root's depth-first helper order
-- `orphan-unexported-helper` - helper is not reached from a same-file public root
-- `accessor-pair` - paired `get` and `set` accessors are not adjacent
-- `class-member-order` - class members appear outside fields, constructor, behavior, statics order
-
-ADR-0001 is the canonical grammar reference.
-
-## Local Verification
-
-Canonical repository gate:
-
-```sh
-npm run ci
+```
+file:line:column: rule-name: description
 ```
 
-That gate builds TypeScript, runs the test suite, runs `stepdown-ts` against `src`, and checks
-the positive witness fixtures under `fixtures/positive`.
+## What it enforces
 
-Release dry-run:
+Each non-test, non-generated TypeScript or TSX file in the project's `tsconfig.json` include set must order its declarations like this:
 
-```sh
-npm run release:check
+```
+imports
+declaration zone:
+  types / interfaces / enums
+  consts
+behavior zone:
+  exported functions and classes
+    each public root followed by its private callees in depth-first order
+unexported helpers (must be reached from a public root)
 ```
 
-The release check runs the canonical gate and `npm pack --dry-run` so package contents include
-the executable wrapper, built output, README, and license before publication.
+For class bodies:
 
-## Reporting Grammar Gaps
+```
+fields
+constructor
+public methods (each followed by its private `this.X()` callees, depth-first)
+private methods (placed inline as DFS reaches them)
+static members (one block, last)
 
-Use the GitHub issue forms for:
+paired get/set accessors for the same property name stay adjacent
+```
 
-- valid TypeScript or TSX structure rejected by the analyzer
-- ADR-0001-invalid structure accepted by the analyzer
-- future structural rule proposals
+Sections are optional — an empty file with just an import passes. The arrow-const pattern `export const f = () => {}` is classified as an exported function (behavior zone), not a const (declaration zone). TSX is supported without forcing a React dependency.
 
-Reports should include compileable source, exact diagnostics or missing diagnostics, and the
-ADR expectation. General style preferences belong outside this tool.
+## What it doesn't do
+
+`stepdown-ts` checks one thing: declaration order. It does not check correctness, security, performance, or API design — TypeScript's compiler, ESLint, Prettier, and other linters already do those, and `stepdown-ts` runs happily alongside them.
+
+It has no configuration file, no rule toggles, and no per-line ignore comments. The order is the order. If a piece of valid TypeScript consistently can't satisfy it, that's a bug in the grammar — [open an issue](https://github.com/stepdown-dev/stepdown-ts/issues), don't reach for a waiver.
+
+## Documentation
+
+The complete specification — every classification rule, the DFS ordering, file selection, and diagnostics — lives in the architecture decision record:
+
+**[ADR-0001: Stepdown TS Structure Analyzer](docs/adr/0001-stepdown-ts-structure-analyzer.md)**
+
+The ADR is canonical for the tool's behavior; this README is the tour. `stepdown-ts` is governed by ADRs under `docs/adr/`, and new rules arrive through new ADRs rather than configuration.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup, the verification gate, and the discipline that applies to changes.
 
 ## License
 
-Apache-2.0 - 2026 Stinnett Holdings LLC.
+[Apache License 2.0](LICENSE).
+
+## Family
+
+`stepdown-ts` is the TypeScript member of the [stepdown family](https://github.com/stepdown-dev) of structural source analyzers — all sharing one [constitution](https://github.com/stepdown-dev/.github/blob/main/PRINCIPLES.md) (positive grammar, no configuration, no waivers, self-policing). The Go sibling, [`stepdown`](https://github.com/stepdown-dev/stepdown-go), is in production at v0.1.3.
