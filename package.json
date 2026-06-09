@@ -36,11 +36,16 @@
   ],
   "scripts": {
     "build": "tsc",
+    "test": "npm run build && npm run test:built",
+    "test:built": "node --test tests/*.test.mjs",
     "self-check": "node bin/cli.mjs src",
     "fixture-check": "node bin/cli.mjs fixtures/positive",
-    "ci": "npm run build && npm run self-check && npm run fixture-check"
+    "ci": "npm run build && npm run test:built && npm run self-check && npm run fixture-check"
   },
   "dependencies": {
     "typescript": "^5.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.2"
   }
 }

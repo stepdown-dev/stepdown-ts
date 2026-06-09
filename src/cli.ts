@@ -1,46 +1,82 @@
-// stepdown-ts CLI entrypoint.
-// Exit codes: 0 clean (or help), 1 findings, 2 tool/load/parse error.
-
-import { runStepdown } from "./walker.js";
 import { formatDiagnostic, formatToolError, sortDiagnostics } from "./diagnostic.js";
+import type { RunOptions, RunResult } from "./walker.js";
+import { runStepdown } from "./walker.js";
 
-async function main(): Promise<number> {
-  const args = process.argv.slice(2);
-
-  if (args.length === 0 || isHelpFlag(args[0])) {
-    printUsage();
-    return 0;
-  }
-
-  const result = await runStepdown({ paths: args });
-
-  if (result.toolError) {
-    console.error(formatToolError("tool-error", result.toolError.message));
-    return 2;
-  }
-
-  const sorted = sortDiagnostics(result.diagnostics);
-  for (const d of sorted) {
-    console.log(formatDiagnostic(d));
-  }
-
-  return sorted.length > 0 ? 1 : 0;
+export interface CliOutput {
+  readonly writeStdout: (text: string) => void;
+  readonly writeStderr: (text: string) => void;
 }
 
-function isHelpFlag(arg: string | undefined): boolean {
+export type StepdownRunner = (options: RunOptions) => Promise<RunResult>;
+
+type ParsedArgs =
+  | { readonly kind: "run"; readonly paths: readonly string[] }
+  | { readonly kind: "help" }
+  | { readonly kind: "error"; readonly message: string };
+
+const USAGE = "Usage: stepdown-ts <path> [<path>...]\n";
+const DESCRIPTION = "  Structural source analyzer for TypeScript files.\n";
+const DOCUMENTATION = "  See https://stepdown.dev/ts for documentation.\n";
+const processOutput: CliOutput = {
+  writeStdout: (text) => process.stdout.write(text),
+  writeStderr: (text) => process.stderr.write(text),
+};
+
+export async function runCli(
+  args: readonly string[],
+  output: CliOutput = processOutput,
+  runner: StepdownRunner = runStepdown,
+): Promise<number> {
+  const request = parseArgs(args);
+  if (request.kind === "help") {
+    printUsage(output);
+    return 0;
+  }
+  if (request.kind === "error") {
+    output.writeStderr(formatToolError("tool-error", request.message) + "\n");
+    return 2;
+  }
+  const result = await runner({ paths: request.paths });
+  if (result.toolError) {
+    output.writeStderr(formatToolError(result.toolError.code, result.toolError.message) + "\n");
+    return 2;
+  }
+  const diagnostics = sortDiagnostics(result.diagnostics);
+  for (const diagnostic of diagnostics) {
+    output.writeStdout(formatDiagnostic(diagnostic) + "\n");
+  }
+  return diagnostics.length > 0 ? 1 : 0;
+}
+
+export async function main(): Promise<void> {
+  try {
+    process.exitCode = await runCli(process.argv.slice(2));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(formatToolError("tool-error", message) + "\n");
+    process.exitCode = 2;
+  }
+}
+
+function parseArgs(args: readonly string[]): ParsedArgs {
+  if (args.length === 0) {
+    return { kind: "error", message: "input path required" };
+  }
+  if (args.some(isHelpFlag)) {
+    if (args.length === 1) {
+      return { kind: "help" };
+    }
+    return { kind: "error", message: "help flag cannot be combined with input paths" };
+  }
+  return { kind: "run", paths: args };
+}
+
+function isHelpFlag(arg: string): boolean {
   return arg === "-h" || arg === "--help" || arg === "-help";
 }
 
-function printUsage(): void {
-  console.log("Usage: stepdown-ts <path> [<path>...]");
-  console.log("  Structural source analyzer for TypeScript files.");
-  console.log("  See https://stepdown.dev/ts for documentation.");
+function printUsage(output: CliOutput): void {
+  output.writeStdout(USAGE);
+  output.writeStdout(DESCRIPTION);
+  output.writeStdout(DOCUMENTATION);
 }
-
-main()
-  .then((code) => process.exit(code))
-  .catch((err: unknown) => {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error(formatToolError("tool-error", message));
-    process.exit(2);
-  });

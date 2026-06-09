@@ -1,7 +1,8 @@
-// stepdown-ts walker — AST-local structural analyzer over the TypeScript compiler API.
-// Implementation gated on ADR-0001 ratification.
-
-import type { Diagnostic } from "./diagnostic.js";
+import type { Diagnostic, ToolError } from "./diagnostic.js";
+import { sortDiagnostics } from "./diagnostic.js";
+import { loadSourceFiles } from "./compiler.js";
+import { moduleDeclarations } from "./declaration.js";
+import { sectionOrderDiagnostics } from "./rules/section-order.js";
 
 export interface RunOptions {
   readonly paths: readonly string[];
@@ -9,12 +10,19 @@ export interface RunOptions {
 
 export interface RunResult {
   readonly diagnostics: readonly Diagnostic[];
-  readonly toolError: Error | null;
+  readonly toolError: ToolError | null;
 }
 
-export async function runStepdown(_options: RunOptions): Promise<RunResult> {
-  // TODO: implement per ADR-0001 once skeleton + Principles doc land.
-  // Walker reads valid TypeScript source via the `typescript` compiler API,
-  // applies positive-grammar rules from src/rules/, and emits text diagnostics.
-  return { diagnostics: [], toolError: null };
+export async function runStepdown(options: RunOptions): Promise<RunResult> {
+  if (options.paths.length === 0) {
+    return { diagnostics: [], toolError: { code: "tool-error", message: "input path required" } };
+  }
+  const loaded = await loadSourceFiles(options.paths);
+  if (loaded.toolError) {
+    return { diagnostics: [], toolError: loaded.toolError };
+  }
+  const diagnostics = loaded.sourceFiles.flatMap((sourceFile) =>
+    sectionOrderDiagnostics(moduleDeclarations(sourceFile)),
+  );
+  return { diagnostics: sortDiagnostics(diagnostics), toolError: null };
 }

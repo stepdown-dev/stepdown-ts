@@ -10,6 +10,11 @@ export interface Diagnostic {
   readonly description: string;
 }
 
+export interface ToolError {
+  readonly code: string;
+  readonly message: string;
+}
+
 export function formatDiagnostic(d: Diagnostic): string {
   return `${d.path}:${d.line}:${d.column}: ${d.rule}: ${d.description}`;
 }
