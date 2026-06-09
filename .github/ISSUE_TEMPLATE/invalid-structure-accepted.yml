@@ -1,0 +1,63 @@
+name: Invalid Structure Accepted
+description: Report compileable source that ADR-0001 says should receive a diagnostic.
+title: "False negative: "
+labels: ["false-negative", "grammar"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when `stepdown-ts` accepts compileable TypeScript or TSX that conflicts with ADR-0001.
+        This report needs an ADR section or rule expectation, not a personal formatting preference.
+  - type: input
+    id: package-version
+    attributes:
+      label: stepdown-ts version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: typescript-version
+    attributes:
+      label: TypeScript version
+      placeholder: "5.4.0"
+    validations:
+      required: true
+  - type: input
+    id: node-version
+    attributes:
+      label: Node version
+      placeholder: "20.x"
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Minimal compileable source
+      description: Include the smallest TypeScript or TSX source that should receive a diagnostic.
+      render: ts
+    validations:
+      required: true
+  - type: textarea
+    id: adr-expectation
+    attributes:
+      label: Expected ADR-0001 diagnostic
+      description: Name the rule and ADR-0001 section that should reject this structure.
+    validations:
+      required: true
+  - type: textarea
+    id: actual-output
+    attributes:
+      label: Actual analyzer output
+      description: Paste the empty or incomplete output that shows the accepted structure.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: compileable
+    attributes:
+      label: Does the source type-check?
+      options:
+        - "Yes"
+        - "No"
+    validations:
+      required: true

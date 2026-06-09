@@ -14,11 +14,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: npm
       - name: Install dependencies
-        run: npm ci || npm install
-      - name: Build
-        run: npm run build
-      - name: Self-check — stepdown-ts on its own src
-        run: npm run self-check
-      - name: Fixture check — positive-witness fixtures (zero diagnostics expected)
-        run: npm run fixture-check
+        run: npm ci
+      - name: Canonical repository gate
+        run: npm run ci

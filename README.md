@@ -1,27 +1,34 @@
 # stepdown-ts
 
-TypeScript implementation of **stepdown** — a family of structural source analyzers enforcing top-down readability.
+TypeScript implementation of **stepdown**, a structural source analyzer for top-down readability.
 
-> **Status: pre-release.** ADR-0001 is Accepted; rule implementation is the next milestone (v0.1.0).
+`stepdown-ts` v0.1.0 implements the grammar accepted in
+[ADR-0001](docs/adrs/0001-stepdown-ts-structure-analyzer.md).
 
 ## Family
 
-- Brand: [stepdown.dev](https://stepdown.dev) → [stepdown.dev/ts](https://stepdown.dev/ts) (this package)
-- Constitution: **[PRINCIPLES.md](https://github.com/stepdown-dev/.github/blob/main/PRINCIPLES.md)** — language-agnostic, binding on every member
+- Brand: [stepdown.dev](https://stepdown.dev) -> [stepdown.dev/ts](https://stepdown.dev/ts)
+- Principles: [stepdown-dev Principles](https://github.com/stepdown-dev/.github/blob/main/PRINCIPLES.md)
 - Go sibling: [stepdown-dev/stepdown-go](https://github.com/stepdown-dev/stepdown-go)
-- Tool specification: [`docs/adrs/0001-stepdown-ts-structure-analyzer.md`](docs/adrs/0001-stepdown-ts-structure-analyzer.md)
+- Specification: [ADR-0001](docs/adrs/0001-stepdown-ts-structure-analyzer.md)
 - Owner: Stinnett Holdings LLC
 
-## What stepdown enforces
+## What It Checks
 
-Source reads top-down: high-level declarations appear before the supporting declarations they depend on, and within a scope a public entry point is immediately followed by its private callees in depth-first call order. stepdown enforces **structure** — never semantics, style, security, performance, or API design.
+Source should read top-down: high-level declarations appear before the supporting declarations
+they depend on, and public roots are followed by their private callees in depth-first order.
 
-`stepdown-ts` is a positive-grammar walker over the TypeScript compiler API. There is no configuration, no waivers, and no escape hatch. If valid code consistently fails, the grammar is wrong and changes; source never gets a waiver.
+`stepdown-ts` checks TypeScript and TSX source structure only. It does not check formatting,
+style, runtime behavior, security, performance, semantic correctness, or API design.
+
+The analyzer is a positive-grammar walker over the TypeScript compiler API. It has no project
+configuration, no local suppressions, and no rule toggles. Accepted TypeScript shapes change
+through ADR review when the grammar needs to expand.
 
 ## Install
 
 ```sh
-pnpm add -D @stepdown-dev/ts
+npm install --save-dev @stepdown-dev/ts@<version>
 ```
 
 ## Invoke
@@ -30,36 +37,79 @@ pnpm add -D @stepdown-dev/ts
 npx @stepdown-dev/ts@<version> <path> [<path>...]
 ```
 
-Or, after local install:
+Or, after pinned local install:
 
 ```sh
-pnpm exec stepdown-ts <path> [<path>...]
+npm exec stepdown-ts <path> [<path>...]
+```
+
+Help:
+
+```sh
+stepdown-ts -h
+stepdown-ts --help
+stepdown-ts -help
 ```
 
 ## Output
 
-`path:line:column: rule-name: description`, one diagnostic per line, sorted, text only.
+Diagnostics are sorted text lines:
+
+```text
+path:line:column: rule-name: description
+```
 
 Exit codes:
 
-- `0` — clean (or `--help`)
-- `1` — findings
-- `2` — tool / load / parse / type-check error
+- `0` - clean input or help
+- `1` - structural findings
+- `2` - tool, load, parse, or type-check error
 
 Verification gates fail closed on any non-zero exit code.
 
-## Rule set (v0.1.0 target)
+## Rule Set
 
-- `section-order` — module-level section out of order (imports / declaration zone / behavior zone)
-- `declaration-zone-order` — consts before types/interfaces/enums in the module-level declaration zone
-- `dfs-public-root` — unexported helper or method appears before its calling public root
-- `helper-placement` — unexported helper outside its DFS-placed position
-- `orphan-unexported-helper` — unexported helper not reached from any public root in the same file
-- `accessor-pair` — `get` and `set` for the same property not adjacent
-- `class-member-order` — class body members out of order (fields / constructor / public methods (DFS) / private methods / statics last)
+- `section-order` - module-level section out of order
+- `declaration-zone-order` - declaration-zone types, interfaces, and enums appear after values
+- `dfs-public-root` - helper appears before the public root that first reaches it
+- `helper-placement` - helper appears outside the public root's depth-first helper order
+- `orphan-unexported-helper` - helper is not reached from a same-file public root
+- `accessor-pair` - paired `get` and `set` accessors are not adjacent
+- `class-member-order` - class members appear outside fields, constructor, behavior, statics order
 
-See [ADR-0001](docs/adrs/0001-stepdown-ts-structure-analyzer.md) for the canonical grammar specification.
+ADR-0001 is the canonical grammar reference.
+
+## Local Verification
+
+Canonical repository gate:
+
+```sh
+npm run ci
+```
+
+That gate builds TypeScript, runs the test suite, runs `stepdown-ts` against `src`, and checks
+the positive witness fixtures under `fixtures/positive`.
+
+Release dry-run:
+
+```sh
+npm run release:check
+```
+
+The release check runs the canonical gate and `npm pack --dry-run` so package contents include
+the executable wrapper, built output, README, and license before publication.
+
+## Reporting Grammar Gaps
+
+Use the GitHub issue forms for:
+
+- valid TypeScript or TSX structure rejected by the analyzer
+- ADR-0001-invalid structure accepted by the analyzer
+- future structural rule proposals
+
+Reports should include compileable source, exact diagnostics or missing diagnostics, and the
+ADR expectation. General style preferences belong outside this tool.
 
 ## License
 
-Apache-2.0 — © 2026 Stinnett Holdings LLC.
+Apache-2.0 - 2026 Stinnett Holdings LLC.

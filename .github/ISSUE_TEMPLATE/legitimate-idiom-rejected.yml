@@ -1,0 +1,63 @@
+name: Legitimate TypeScript Structure Rejected
+description: Report compileable TypeScript or TSX that ADR-0001 should accept.
+title: "False positive: "
+labels: ["false-positive", "grammar"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when compileable TypeScript or TSX follows ADR-0001 but `stepdown-ts` reports a diagnostic.
+        Grammar changes happen through ADR review when the accepted language shape needs to expand.
+  - type: input
+    id: package-version
+    attributes:
+      label: stepdown-ts version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: typescript-version
+    attributes:
+      label: TypeScript version
+      placeholder: "5.4.0"
+    validations:
+      required: true
+  - type: input
+    id: node-version
+    attributes:
+      label: Node version
+      placeholder: "20.x"
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Minimal compileable source
+      description: Include the smallest TypeScript or TSX source that reproduces the diagnostic.
+      render: ts
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Actual diagnostics
+      description: Paste the exact `path:line:column: rule-name: description` output.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: adr-outcome
+    attributes:
+      label: Expected ADR-0001 outcome
+      description: Name the ADR-0001 section or rule that should accept this source.
+    validations:
+      required: true
+  - type: dropdown
+    id: compileable
+    attributes:
+      label: Does the source type-check?
+      options:
+        - "Yes"
+        - "No"
+    validations:
+      required: true

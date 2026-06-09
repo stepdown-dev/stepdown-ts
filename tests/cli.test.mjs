@@ -13,6 +13,11 @@ test("help flags print usage and exit clean", async () => {
 
   assert.equal(code, 0);
   assert.match(output.stdoutText(), /^Usage: stepdown-ts <path> \[<path>\.\.\.\]/);
+  assert.match(output.stdoutText(), /stepdown-ts -h/);
+  assert.match(output.stdoutText(), /stepdown-ts --help/);
+  assert.match(output.stdoutText(), /stepdown-ts -help/);
+  assert.match(output.stdoutText(), /Exit codes:/);
+  assert.match(output.stdoutText(), /ADR-0001/);
   assert.equal(output.stderrText(), "");
 });
 

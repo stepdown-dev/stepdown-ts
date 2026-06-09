@@ -15,8 +15,22 @@ type ParsedArgs =
   | { readonly kind: "error"; readonly message: string };
 
 const USAGE = "Usage: stepdown-ts <path> [<path>...]\n";
-const DESCRIPTION = "  Structural source analyzer for TypeScript files.\n";
-const DOCUMENTATION = "  See https://stepdown.dev/ts for documentation.\n";
+const HELP_LINES = [
+  USAGE,
+  "  Structural source analyzer for TypeScript and TSX files.\n",
+  "\n",
+  "Help:\n",
+  "  stepdown-ts -h\n",
+  "  stepdown-ts --help\n",
+  "  stepdown-ts -help\n",
+  "\n",
+  "Exit codes:\n",
+  "  0 clean input or help\n",
+  "  1 structural findings\n",
+  "  2 tool, load, parse, or type-check error\n",
+  "\n",
+  "See README.md and ADR-0001 for the structural grammar.\n",
+] as const;
 const processOutput: CliOutput = {
   writeStdout: (text) => process.stdout.write(text),
   writeStderr: (text) => process.stderr.write(text),
@@ -75,9 +89,9 @@ function isHelpFlag(arg: string): boolean {
 }
 
 function printUsage(output: CliOutput): void {
-  output.writeStdout(USAGE);
-  output.writeStdout(DESCRIPTION);
-  output.writeStdout(DOCUMENTATION);
+  for (const line of HELP_LINES) {
+    output.writeStdout(line);
+  }
 }
 
 export async function main(): Promise<void> {

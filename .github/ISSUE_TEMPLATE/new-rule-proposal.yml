@@ -1,0 +1,39 @@
+name: New Structural Rule Proposal
+description: Propose future ADR work for a new structural grammar rule.
+title: "Rule proposal: "
+labels: ["proposal", "adr"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for structural grammar ideas that are not covered by ADR-0001.
+        New rule families require ADR coverage before implementation.
+  - type: textarea
+    id: structural-problem
+    attributes:
+      label: Structural problem
+      description: Describe the source-reading problem the new rule would solve.
+    validations:
+      required: true
+  - type: textarea
+    id: accepted-shape
+    attributes:
+      label: Positive grammar shape
+      description: Show the TypeScript or TSX shape that should remain accepted.
+      render: ts
+    validations:
+      required: true
+  - type: textarea
+    id: adr-impact
+    attributes:
+      label: ADR impact
+      description: Name the ADR-0001 section that would need amendment or the new ADR area needed.
+    validations:
+      required: true
+  - type: textarea
+    id: non-goals
+    attributes:
+      label: Non-goals
+      description: Name any style, semantic, runtime, security, or API concerns this rule must not absorb.
+    validations:
+      required: true

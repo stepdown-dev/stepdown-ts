@@ -1,6 +1,6 @@
 {
   "name": "@stepdown-dev/ts",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "TypeScript implementation of stepdown — a family of structural source analyzers enforcing top-down readability.",
   "license": "Apache-2.0",
   "author": "Stinnett Holdings LLC",
@@ -40,7 +40,9 @@
     "test:built": "node --test tests/*.test.mjs",
     "self-check": "node bin/cli.mjs src",
     "fixture-check": "node bin/cli.mjs fixtures/positive",
-    "ci": "npm run build && npm run test:built && npm run self-check && npm run fixture-check"
+    "ci": "npm run build && npm run test:built && npm run self-check && npm run fixture-check",
+    "pack:check": "npm pack --dry-run",
+    "release:check": "npm run ci && npm run pack:check"
   },
   "dependencies": {
     "typescript": "^5.4.0"
