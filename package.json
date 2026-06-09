@@ -45,7 +45,7 @@
     "release:check": "npm run ci && npm run pack:check"
   },
   "dependencies": {
-    "typescript": "^5.4.0"
+    "typescript": "^6.0.3"
   },
   "devDependencies": {
     "@types/node": "^25.9.2"
