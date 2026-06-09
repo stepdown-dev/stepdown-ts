@@ -144,7 +144,7 @@ Expected repository files:
 - `.github/workflows/verify.yml`: pull request and main-branch verification.
 - `.github/dependabot.yml`: npm dependency update checks.
 - `.github/ISSUE_TEMPLATE/legitimate-idiom-rejected.yml`: reports valid TypeScript structure rejected by the analyzer.
-- `.github/ISSUE_TEMPLATE/invalid-structure-accepted.yml`: reports source shape accepted when ADR-0001 says it should not be.
+- `.github/ISSUE_TEMPLATE/structural-shape-accepted.yml`: reports source shape accepted when ADR-0001 says it should not be.
 - `.github/ISSUE_TEMPLATE/new-rule-proposal.yml`: proposes later ADR work.
 - `.github/PULL_REQUEST_TEMPLATE.md`: keeps changes tied to ADR-0001, tests, fixtures, and verification commands.
 - `README.md`: public usage, Principles link, ADR link, install and invoke commands, output and exit codes.
@@ -274,7 +274,7 @@ Dependency update configuration:
    - Acceptance: dry run reports intended package files.
 
 4. Public templates
-   - Add issue templates for rejected valid idiom, accepted invalid structure, and new-rule proposal.
+   - Add issue templates for rejected valid idiom, accepted structural shape, and new-rule proposal.
    - Add pull request template.
    - Acceptance: templates collect ADR-linked evidence and reject waiver/config framing.
 

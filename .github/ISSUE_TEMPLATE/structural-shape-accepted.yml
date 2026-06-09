@@ -1,6 +1,6 @@
-name: Invalid Structure Accepted
+name: Structural Shape Accepted
 description: Report compileable source that ADR-0001 says should receive a diagnostic.
-title: "False negative: "
+title: "Structural shape accepted: "
 labels: ["false-negative", "grammar"]
 body:
   - type: markdown
