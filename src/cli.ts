@@ -48,27 +48,26 @@ export async function runCli(
   return diagnostics.length > 0 ? 1 : 0;
 }
 
-export async function main(): Promise<void> {
-  try {
-    process.exitCode = await runCli(process.argv.slice(2));
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    process.stderr.write(formatToolError("tool-error", message) + "\n");
-    process.exitCode = 2;
-  }
-}
-
 function parseArgs(args: readonly string[]): ParsedArgs {
   if (args.length === 0) {
     return { kind: "error", message: "input path required" };
   }
-  if (args.some(isHelpFlag)) {
+  if (hasHelpFlag(args)) {
     if (args.length === 1) {
       return { kind: "help" };
     }
     return { kind: "error", message: "help flag cannot be combined with input paths" };
   }
   return { kind: "run", paths: args };
+}
+
+function hasHelpFlag(args: readonly string[]): boolean {
+  for (const arg of args) {
+    if (isHelpFlag(arg)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function isHelpFlag(arg: string): boolean {
@@ -79,4 +78,14 @@ function printUsage(output: CliOutput): void {
   output.writeStdout(USAGE);
   output.writeStdout(DESCRIPTION);
   output.writeStdout(DOCUMENTATION);
+}
+
+export async function main(): Promise<void> {
+  try {
+    process.exitCode = await runCli(process.argv.slice(2));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(formatToolError("tool-error", message) + "\n");
+    process.exitCode = 2;
+  }
 }

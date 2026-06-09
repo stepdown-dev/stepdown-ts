@@ -139,6 +139,10 @@ async function directoryEntries(directory: string): Promise<{
   }
 }
 
+function toolError(code: string, message: string): ToolError {
+  return { code, message };
+}
+
 async function selectFile(filePath: string): Promise<{
   readonly paths: readonly string[];
   readonly toolError: ToolError | null;
@@ -154,6 +158,10 @@ async function selectFile(filePath: string): Promise<{
 async function fileHead(filePath: string): Promise<string> {
   const text = await readFile(filePath, "utf8");
   return text.slice(0, FILE_HEAD_BYTES);
+}
+
+function isMissingPath(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
 }
 
 function compilerSetup(): CompilerSetup {
@@ -172,6 +180,10 @@ function compilerSetup(): CompilerSetup {
   }
   const options = analysisOptions(parsed.options);
   return { options, toolError: null };
+}
+
+function compilerDiagnostic(code: string, diagnostic: ts.Diagnostic): ToolError {
+  return toolError(code, ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"));
 }
 
 function analysisOptions(options: ts.CompilerOptions): ts.CompilerOptions {
@@ -193,10 +205,11 @@ function compilerHost(options: ts.CompilerOptions): ts.CompilerHost {
   const hostFileExists = host.fileExists.bind(host);
   const hostReadFile = host.readFile.bind(host);
   const hostSourceFile = host.getSourceFile.bind(host);
-  host.fileExists = (fileName) => isJSXIntrinsics(fileName) || hostFileExists(fileName);
-  host.readFile = (fileName) => (isJSXIntrinsics(fileName) ? JSX_INTRINSICS_TEXT : hostReadFile(fileName));
+  host.fileExists = (fileName) => path.resolve(fileName) === JSX_INTRINSICS_PATH || hostFileExists(fileName);
+  host.readFile = (fileName) =>
+    path.resolve(fileName) === JSX_INTRINSICS_PATH ? JSX_INTRINSICS_TEXT : hostReadFile(fileName);
   host.getSourceFile = (fileName, languageVersion, onError, shouldCreateNewSourceFile) => {
-    if (isJSXIntrinsics(fileName)) {
+    if (path.resolve(fileName) === JSX_INTRINSICS_PATH) {
       return ts.createSourceFile(fileName, JSX_INTRINSICS_TEXT, languageVersion, true, ts.ScriptKind.TS);
     }
     return hostSourceFile(fileName, languageVersion, onError, shouldCreateNewSourceFile);
@@ -205,33 +218,29 @@ function compilerHost(options: ts.CompilerOptions): ts.CompilerHost {
 }
 
 function compilerFailure(program: ts.Program, selected: ReadonlySet<string>): ToolError | null {
-  const syntactic = program.getSyntacticDiagnostics().find((diagnostic) => selectedDiagnostic(diagnostic, selected));
+  const syntactic = firstSelectedDiagnostic(program.getSyntacticDiagnostics(), selected);
   if (syntactic) {
     return compilerDiagnostic("parse-failure", syntactic);
   }
-  const semantic = program.getSemanticDiagnostics().find((diagnostic) => selectedDiagnostic(diagnostic, selected));
+  const semantic = firstSelectedDiagnostic(program.getSemanticDiagnostics(), selected);
   if (semantic) {
     return compilerDiagnostic("type-check-failure", semantic);
   }
   return null;
 }
 
+function firstSelectedDiagnostic(
+  diagnostics: readonly ts.Diagnostic[],
+  selected: ReadonlySet<string>,
+): ts.Diagnostic | null {
+  for (const diagnostic of diagnostics) {
+    if (selectedDiagnostic(diagnostic, selected)) {
+      return diagnostic;
+    }
+  }
+  return null;
+}
+
 function selectedDiagnostic(diagnostic: ts.Diagnostic, selected: ReadonlySet<string>): boolean {
   return diagnostic.file === undefined || selected.has(path.resolve(diagnostic.file.fileName));
-}
-
-function compilerDiagnostic(code: string, diagnostic: ts.Diagnostic): ToolError {
-  return toolError(code, ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"));
-}
-
-function isJSXIntrinsics(fileName: string): boolean {
-  return path.resolve(fileName) === JSX_INTRINSICS_PATH;
-}
-
-function toolError(code: string, message: string): ToolError {
-  return { code, message };
-}
-
-function isMissingPath(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
 }
