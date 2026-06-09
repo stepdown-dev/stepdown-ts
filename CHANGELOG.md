@@ -6,7 +6,11 @@ This project follows Semantic Versioning.
 
 ## [Unreleased]
 
-Pre-release repository hygiene and TypeScript analyzer preparation.
+No changes yet.
+
+## [0.1.0] - 2026-06-09
+
+Initial public release of the TypeScript stepdown analyzer.
 
 ### Added
 
