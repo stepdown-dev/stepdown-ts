@@ -1,10 +1,10 @@
 # Contributing to stepdown-ts
 
 `stepdown-ts` is governed by the language-agnostic stepdown Principles and ADRs under
-`docs/adrs/`. Before contributing, read the canonical sources:
+`docs/adr/`. Before contributing, read the canonical sources:
 
 - **stepdown Principles:** <https://github.com/stepdown-dev/.github/blob/main/PRINCIPLES.md>
-- **[ADR-0001: Stepdown TS Structure Analyzer](docs/adrs/0001-stepdown-ts-structure-analyzer.md)**
+- **[ADR-0001: Stepdown TS Structure Analyzer](docs/adr/0001-stepdown-ts-structure-analyzer.md)**
 
 ## ADR-driven evolution
 
@@ -14,7 +14,7 @@ The grammar `stepdown-ts` enforces is described entirely in ADRs. The rule:
   improvements, and performance work** do not require new ADRs. They are maintainer
   discretion under semantic-versioning patch releases.
 - **Anything that changes what `stepdown-ts` accepts or rejects as conforming
-  TypeScript source** requires a new ADR in this repository's `docs/adrs/` sequence
+  TypeScript source** requires a new ADR in this repository's `docs/adr/` sequence
   that explicitly cites the ADR it amends or supersedes.
 
 New rules must trace back to stepdown's one opinion: source structure should read

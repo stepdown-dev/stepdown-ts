@@ -3,14 +3,14 @@
 TypeScript implementation of **stepdown**, a structural source analyzer for top-down readability.
 
 `stepdown-ts` v0.1.0 implements the grammar accepted in
-[ADR-0001](docs/adrs/0001-stepdown-ts-structure-analyzer.md).
+[ADR-0001](docs/adr/0001-stepdown-ts-structure-analyzer.md).
 
 ## Family
 
 - Brand: [stepdown.dev](https://stepdown.dev) -> [stepdown.dev/ts](https://stepdown.dev/ts)
 - Principles: [stepdown-dev Principles](https://github.com/stepdown-dev/.github/blob/main/PRINCIPLES.md)
 - Go sibling: [stepdown-dev/stepdown-go](https://github.com/stepdown-dev/stepdown-go)
-- Specification: [ADR-0001](docs/adrs/0001-stepdown-ts-structure-analyzer.md)
+- Specification: [ADR-0001](docs/adr/0001-stepdown-ts-structure-analyzer.md)
 - Owner: Stinnett Holdings LLC
 
 ## What It Checks

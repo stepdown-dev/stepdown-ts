@@ -2,7 +2,7 @@
 
 Status: Draft for v0.1.0 implementation
 Date: 2026-06-09
-Authority: [ADR-0001](../adrs/0001-stepdown-ts-structure-analyzer.md)
+Authority: [ADR-0001](../adr/0001-stepdown-ts-structure-analyzer.md)
 Target release: v0.1.0
 
 ## Problem And Success
