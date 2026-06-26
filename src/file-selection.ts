@@ -13,3 +13,7 @@ export function shouldAnalyze(filePath: string, fileHead: string): boolean {
   if (GENERATED_MARKERS.some((m) => fileHead.includes(m))) return false;
   return TYPESCRIPT_PATTERN.test(filePath);
 }
+
+export function isDeclarationFile(filePath: string): boolean {
+  return DECLARATION_PATTERN.test(filePath);
+}

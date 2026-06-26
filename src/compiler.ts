@@ -5,7 +5,7 @@ import path from "node:path";
 import ts from "typescript";
 
 import type { ToolError } from "./diagnostic.js";
-import { shouldAnalyze } from "./file-selection.js";
+import { isDeclarationFile, shouldAnalyze } from "./file-selection.js";
 
 interface SourceLoad {
   readonly sourceFiles: readonly ts.SourceFile[];
@@ -14,6 +14,12 @@ interface SourceLoad {
 
 interface CompilerSetup {
   readonly options: ts.CompilerOptions;
+  readonly toolError: ToolError | null;
+}
+
+interface SourcePathSelection {
+  readonly analysisPaths: readonly string[];
+  readonly typeContextPaths: readonly string[];
   readonly toolError: ToolError | null;
 }
 
@@ -44,11 +50,11 @@ export async function loadSourceFiles(inputPaths: readonly string[]): Promise<So
     return { sourceFiles: [], toolError: setup.toolError };
   }
   const program = ts.createProgram(
-    [...selectedPaths.paths, JSX_INTRINSICS_PATH],
+    [...selectedPaths.analysisPaths, ...selectedPaths.typeContextPaths, JSX_INTRINSICS_PATH],
     setup.options,
     compilerHost(setup.options),
   );
-  const selected = new Set(selectedPaths.paths.map((filePath) => path.resolve(filePath)));
+  const selected = new Set(selectedPaths.analysisPaths.map((filePath) => path.resolve(filePath)));
   const toolError = compilerFailure(program, selected);
   if (toolError) {
     return { sourceFiles: [], toolError };
@@ -61,27 +67,29 @@ export async function loadSourceFiles(inputPaths: readonly string[]): Promise<So
   };
 }
 
-async function selectedSourcePaths(inputPaths: readonly string[]): Promise<{
-  readonly paths: readonly string[];
-  readonly toolError: ToolError | null;
-}> {
-  const selected = new Set<string>();
+async function selectedSourcePaths(inputPaths: readonly string[]): Promise<SourcePathSelection> {
+  const analysisPaths = new Set<string>();
+  const typeContextPaths = new Set<string>();
   for (const inputPath of inputPaths) {
     const result = await selectInputPath(inputPath);
     if (result.toolError) {
-      return { paths: [], toolError: result.toolError };
+      return { analysisPaths: [], typeContextPaths: [], toolError: result.toolError };
     }
-    for (const sourcePath of result.paths) {
-      selected.add(sourcePath);
+    for (const sourcePath of result.analysisPaths) {
+      analysisPaths.add(sourcePath);
+    }
+    for (const sourcePath of result.typeContextPaths) {
+      typeContextPaths.add(sourcePath);
     }
   }
-  return { paths: [...selected].sort(), toolError: null };
+  return {
+    analysisPaths: [...analysisPaths].sort(),
+    typeContextPaths: [...typeContextPaths].sort(),
+    toolError: null,
+  };
 }
 
-async function selectInputPath(inputPath: string): Promise<{
-  readonly paths: readonly string[];
-  readonly toolError: ToolError | null;
-}> {
+async function selectInputPath(inputPath: string): Promise<SourcePathSelection> {
   const absolute = path.resolve(inputPath);
   try {
     const entry = await stat(absolute);
@@ -91,24 +99,34 @@ async function selectInputPath(inputPath: string): Promise<{
     if (entry.isFile()) {
       return selectFile(absolute);
     }
-    return { paths: [], toolError: toolError("unsupported-path", `path is not a file or directory: ${inputPath}`) };
+    return {
+      analysisPaths: [],
+      typeContextPaths: [],
+      toolError: toolError("unsupported-path", `path is not a file or directory: ${inputPath}`),
+    };
   } catch (error) {
     if (isMissingPath(error)) {
-      return { paths: [], toolError: toolError("path-not-found", `path does not exist: ${inputPath}`) };
+      return {
+        analysisPaths: [],
+        typeContextPaths: [],
+        toolError: toolError("path-not-found", `path does not exist: ${inputPath}`),
+      };
     }
-    return { paths: [], toolError: toolError("path-unreadable", `path cannot be read: ${inputPath}`) };
+    return {
+      analysisPaths: [],
+      typeContextPaths: [],
+      toolError: toolError("path-unreadable", `path cannot be read: ${inputPath}`),
+    };
   }
 }
 
-async function selectDirectory(directory: string): Promise<{
-  readonly paths: readonly string[];
-  readonly toolError: ToolError | null;
-}> {
+async function selectDirectory(directory: string): Promise<SourcePathSelection> {
   const entries = await directoryEntries(directory);
   if (entries.toolError) {
-    return { paths: [], toolError: entries.toolError };
+    return { analysisPaths: [], typeContextPaths: [], toolError: entries.toolError };
   }
-  const selected: string[] = [];
+  const analysisPaths: string[] = [];
+  const typeContextPaths: string[] = [];
   for (const entry of [...entries.values].sort((a, b) => a.name.localeCompare(b.name))) {
     const entryPath = path.join(directory, entry.name);
     if (entry.isDirectory()) {
@@ -116,16 +134,18 @@ async function selectDirectory(directory: string): Promise<{
       if (child.toolError) {
         return child;
       }
-      selected.push(...child.paths);
+      analysisPaths.push(...child.analysisPaths);
+      typeContextPaths.push(...child.typeContextPaths);
     } else if (entry.isFile()) {
       const file = await selectFile(entryPath);
       if (file.toolError) {
         return file;
       }
-      selected.push(...file.paths);
+      analysisPaths.push(...file.analysisPaths);
+      typeContextPaths.push(...file.typeContextPaths);
     }
   }
-  return { paths: selected, toolError: null };
+  return { analysisPaths, typeContextPaths, toolError: null };
 }
 
 async function directoryEntries(directory: string): Promise<{
@@ -143,15 +163,23 @@ function toolError(code: string, message: string): ToolError {
   return { code, message };
 }
 
-async function selectFile(filePath: string): Promise<{
-  readonly paths: readonly string[];
-  readonly toolError: ToolError | null;
-}> {
+async function selectFile(filePath: string): Promise<SourcePathSelection> {
   try {
     const head = await fileHead(filePath);
-    return { paths: shouldAnalyze(filePath, head) ? [filePath] : [], toolError: null };
+    if (isDeclarationFile(filePath)) {
+      return { analysisPaths: [], typeContextPaths: [filePath], toolError: null };
+    }
+    return {
+      analysisPaths: shouldAnalyze(filePath, head) ? [filePath] : [],
+      typeContextPaths: [],
+      toolError: null,
+    };
   } catch {
-    return { paths: [], toolError: toolError("path-unreadable", `path cannot be read: ${filePath}`) };
+    return {
+      analysisPaths: [],
+      typeContextPaths: [],
+      toolError: toolError("path-unreadable", `path cannot be read: ${filePath}`),
+    };
   }
 }
 

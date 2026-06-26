@@ -26,6 +26,21 @@ test("source selection admits TypeScript and TSX while skipping out-of-scope fil
   }
 });
 
+test("declaration files provide ambient context without becoming analysis subjects", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "stepdown-declarations-"));
+  try {
+    await writeFile(path.join(root, "session.ts"), sessionReader());
+    await writeFile(path.join(root, "environment.d.ts"), ambientSessionDeclaration());
+
+    const result = await runStepdown({ paths: [root] });
+
+    assert.equal(result.toolError, null);
+    assert.deepEqual(result.diagnostics, []);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("generated marker outside the file head does not exclude the file", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "stepdown-generated-"));
   try {
@@ -39,6 +54,32 @@ test("generated marker outside the file head does not exclude the file", async (
     await rm(root, { recursive: true, force: true });
   }
 });
+
+function sessionReader() {
+  return [
+    "export function sessionId(): string {",
+    "  return window.adminSession?.id ?? '';",
+    "}",
+    "",
+  ].join("\n");
+}
+
+function ambientSessionDeclaration() {
+  return [
+    "export {};",
+    "declare global {",
+    "  interface Window {",
+    "    adminSession?: { id: string };",
+    "  }",
+    "  var window: Window;",
+    "}",
+    "export function declarationOnlyHelper(): void;",
+    "export interface LateDeclaration {",
+    "  value: string;",
+    "}",
+    "",
+  ].join("\n");
+}
 
 test("malformed TypeScript is a parse failure", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "stepdown-parse-"));
