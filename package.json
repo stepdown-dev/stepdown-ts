@@ -1,6 +1,6 @@
 {
   "name": "@stepdown-dev/ts",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "TypeScript implementation of stepdown — a family of structural source analyzers enforcing top-down readability.",
   "license": "Apache-2.0",
   "author": "Stinnett Holdings LLC",
